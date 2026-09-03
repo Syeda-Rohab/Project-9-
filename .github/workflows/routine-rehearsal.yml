@@ -1,0 +1,41 @@
+name: Routine Rehearsal
+
+# This is the free stand-in for Claude Code's "Run now" / one-off
+# schedule (/schedule tomorrow at 9am, ...). workflow_dispatch gives
+# you a manual "Run workflow" button in the Actions tab — you fire it
+# once, on demand, exactly like a one-off run, and it does NOT repeat
+# on its own (no cron here — matching "do not put it on a repeating
+# schedule").
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "success or fail"
+        required: true
+        default: "success"
+        type: choice
+        options:
+          - success
+          - fail
+
+jobs:
+  run-routine:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.email "routine@example.com"
+          git config user.name "Routine Bot"
+
+      - name: Run the routine's task
+        run: python routine_task.py ${{ github.event.inputs.mode }}
+
+      - name: Push the summary branch (only exists on success)
+        if: github.event.inputs.mode == 'success'
+        run: git push origin claude/summary --force
